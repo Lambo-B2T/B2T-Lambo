@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niche Explorer — Ghost Operator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #080808;
+    --surface: #111;
+    --surface2: #161616;
+    --border: #1e1e1e;
+    --border2: #2a2a2a;
+    --accent: #c8ff00;
+    --accent2: #ff6b35;
+    --accent3: #00d4ff;
+    --accent4: #bf5fff;
+    --text: #efefef;
+    --muted: #555;
+    --muted2: #888;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,255,0,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,255,0,0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header { margin-bottom: 48px; }
+  .tag { font-size: 10px; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1;
+  }
+  h1 em { color: var(--accent); font-style: normal; }
+  .subtitle { margin-top: 12px; font-size: 11px; color: var(--muted2); line-height: 1.9; }
+
+  /* UNIVERSE TABS */
+  .universe-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 24px;
+  }
+
+  .u-tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .u-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+
+  .u-tab:hover { background: var(--surface2); }
+
+  .u-tab.active::after { transform: scaleX(1); }
+  .u-tab.active { background: var(--surface2); }
+
+  .u-tab[data-u="tech"]::after { background: var(--accent3); }
+  .u-tab[data-u="sante"]::after { background: var(--accent); }
+  .u-tab[data-u="sport"]::after { background: var(--accent2); }
+  .u-tab[data-u="maison"]::after { background: var(--accent4); }
+
+  .u-tab[data-u="tech"].active .u-icon,
+  .u-tab[data-u="tech"]:hover .u-icon { color: var(--accent3); }
+  .u-tab[data-u="sante"].active .u-icon,
+  .u-tab[data-u="sante"]:hover .u-icon { color: var(--accent); }
+  .u-tab[data-u="sport"].active .u-icon,
+  .u-tab[data-u="sport"]:hover .u-icon { color: var(--accent2); }
+  .u-tab[data-u="maison"].active .u-icon,
+  .u-tab[data-u="maison"]:hover .u-icon { color: var(--accent4); }
+
+  .u-icon { font-size: 20px; display: block; margin-bottom: 6px; transition: color 0.2s; }
+  .u-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2); }
+
+  /* LAUNCH */
+  .launch-area { margin-bottom: 36px; }
+
+  .launch-btn {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .launch-btn[data-u="tech"] { background: var(--accent3); color: #000; }
+  .launch-btn[data-u="sante"] { background: var(--accent); color: #000; }
+  .launch-btn[data-u="sport"] { background: var(--accent2); color: #000; }
+  .launch-btn[data-u="maison"] { background: var(--accent4); color: #000; }
+
+  .launch-btn:hover { filter: brightness(1.15); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .launch-btn:disabled { background: var(--border2) !important; color: var(--muted) !important; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+
+  /* LOADER */
+  .loader { display: none; padding: 40px 0; }
+  .loader.active { display: block; }
+  .loader-bar { height: 1px; background: var(--border2); overflow: hidden; margin-bottom: 16px; }
+  .loader-fill { height: 100%; width: 30%; animation: slide 1s ease-in-out infinite; }
+  .loader-fill[data-u="tech"] { background: var(--accent3); }
+  .loader-fill[data-u="sante"] { background: var(--accent); }
+  .loader-fill[data-u="sport"] { background: var(--accent2); }
+  .loader-fill[data-u="maison"] { background: var(--accent4); }
+  @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(400%)} }
+  .loader-msg { font-size: 10px; letter-spacing: 2px; color: var(--muted2); animation: blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* ERROR */
+  .error { display:none; padding:16px; border:1px solid #ff4444; color:#ff4444; font-size:11px; line-height:1.8; margin-bottom:20px; }
+  .error.active { display:block; }
+
+  /* RESULTS */
+  .results { display: none; }
+  .results.active { display: block; }
+
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* NICHE CARDS GRID */
+  .niche-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2px;
+    margin-bottom: 30px;
+  }
+
+  .niche-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: up 0.4s forwards;
+  }
+
+  .niche-card:nth-child(1){animation-delay:.05s}
+  .niche-card:nth-child(2){animation-delay:.1s}
+  .niche-card:nth-child(3){animation-delay:.15s}
+  .niche-card:nth-child(4){animation-delay:.2s}
+  .niche-card:nth-child(5){animation-delay:.25s}
+  .niche-card:nth-child(6){animation-delay:.3s}
+
+  @keyframes up { to{opacity:1;transform:translateY(0)} }
+
+  .niche-card:hover { background: var(--surface2); border-color: var(--border2); }
+  .niche-card.selected { border-color: var(--accent) !important; background: rgba(200,255,0,0.04); }
+
+  .card-accent-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .bar-tech { background: var(--accent3); }
+  .bar-sante { background: var(--accent); }
+  .bar-sport { background: var(--accent2); }
+  .bar-maison { background: var(--accent4); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .card-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    flex: 1;
+  }
+
+  .card-score {
+    font-size: 9px;
+    padding: 3px 8px;
+    border: 1px solid;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .score-hot { border-color: var(--accent2); color: var(--accent2); }
+  .score-good { border-color: var(--accent); color: var(--accent); }
+  .score-rising { border-color: var(--accent3); color: var(--accent3); }
+
+  .card-desc { font-size: 11px; color: var(--muted2); line-height: 1.7; margin-bottom: 14px; }
+
+  .card-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-size: 8px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .stat-val { font-size: 12px; font-weight: 700; }
+
+  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .card-tag {
+    font-size: 9px;
+    padding: 3px 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    letter-spacing: 1px;
+  }
+
+  /* EXPANDED */
+  .card-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+
+  .niche-card.open .card-expand { max-height: 500px; }
+
+  .expand-body {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ex-section {}
+  .ex-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .ex-text { font-size: 11px; color: #aaa; line-height: 1.8; }
+
+  .label-tech { color: var(--accent3); }
+  .label-sante { color: var(--accent); }
+  .label-sport { color: var(--accent2); }
+  .label-maison { color: var(--accent4); }
+
+  .approach-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 3px 10px;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  .approach-marque { background: rgba(200,255,0,0.08); border: 1px solid rgba(200,255,0,0.2); color: var(--accent); }
+  .approach-test { background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); color: var(--accent2); }
+  .approach-both { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); color: var(--accent3); }
+
+  /* SELECT / COMPARE */
+  .select-hint { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 8px; text-align: right; }
+  .check { display: none; position: absolute; top: 12px; right: 12px; font-size: 14px; color: var(--accent); }
+  .niche-card.selected .check { display: block; }
+
+  /* COMPARE BAR */
+  .compare-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #111;
+    border-top: 1px solid var(--border2);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+  }
+
+  .compare-bar.visible { transform: translateY(0); }
+
+  .compare-info { font-size: 11px; color: var(--muted2); }
+  .compare-info strong { color: var(--accent); font-size: 13px; }
+
+  .compare-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+
+  /* COMPARE MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    max-width: 900px;
+    width: 100%;
+    margin: auto;
+    padding: 30px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .modal-close {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    padding: 6px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .compare-grid {
+    display: grid;
+    gap: 2px;
+  }
+
+  .compare-col {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+
+  .compare-col-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compare-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row-label { font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; flex-shrink: 0; }
+  .compare-row-val { font-size: 11px; color: var(--text); text-align: right; }
+
+  .regen-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    padding: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .regen-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .universe-tabs { grid-template-columns: repeat(2, 1fr); }
+    .niche-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="tag">// Ghost Operator — Module 01b</div>
+    <h1>NICHE <em>EXPLORER</em></h1>
+    <p class="subtitle">Explorez plusieurs niches par univers — sélectionnez et comparez.</p>
+  </header>
+
+  <!-- Universe tabs -->
+  <div class="universe-tabs">
+    <div class="u-tab active" data-u="tech" onclick="selectUniverse('tech')">
+      <span class="u-icon">⚡</span>
+      <span class="u-label">Tech</span>
+    </div>
+    <div class="u-tab" data-u="sante" onclick="selectUniverse('sante')">
+      <span class="u-icon">🌿</span>
+      <span class="u-label">Santé</span>
+    </div>
+    <div class="u-tab" data-u="sport" onclick="selectUniverse('sport')">
+      <span class="u-icon">🏋️</span>
+      <span class="u-label">Sport</span>
+    </div>
+    <div class="u-tab" data-u="maison" onclick="selectUniverse('maison')">
+      <span class="u-icon">🏠</span>
+      <span class="u-label">Maison</span>
+    </div>
+  </div>
+
+  <div class="launch-area">
+    <button class="launch-btn" id="launchBtn" data-u="tech" onclick="analyze()">
+      ⚡ ANALYSER — TECH & GADGETS
+    </button>
+  </div>
+
+  <div class="error" id="errorBox"></div>
+  <div class="loader" id="loader">
+    <div class="loader-bar"><div class="loader-fill" id="loaderFill" data-u="tech"></div></div>
+    <div class="loader-msg" id="loaderMsg">SCAN EN COURS...</div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-title" id="resultsTitle">— 6 NICHES IDENTIFIÉES</div>
+    <div class="niche-grid" id="nicheGrid"></div>
+    <div class="select-hint">Cliquer pour détails • Maintenir pour sélectionner et comparer</div>
+    <button class="regen-btn" onclick="analyze()">↻ REGÉNÉRER CET UNIVERS</button>
+  </div>
+</div>
+
+<!-- Compare bar -->
+<div class="compare-bar" id="compareBar">
+  <div class="compare-info"><strong id="compareCount">0</strong> niches sélectionnées</div>
+  <button class="clear-btn" onclick="clearSelection()">EFFACER</button>
+  <button class="compare-btn" onclick="openCompare()">COMPARER →</button>
+</div>
+
+<!-- Compare modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">COMPARAISON</div>
+      <button class="modal-close" onclick="closeModal()">✕ FERMER</button>
+    </div>
+    <div class="compare-grid" id="compareGrid"></div>
+  </div>
+</div>
+
+<script>
+const UNIVERSES = {
+  tech:   { label: 'Tech & Gadgets',    icon: '⚡', color: 'var(--accent3)', barClass: 'bar-tech',   labelClass: 'label-tech',   btnText: '⚡ ANALYSER — TECH & GADGETS' },
+  sante:  { label: 'Santé & Bien-être', icon: '🌿', color: 'var(--accent)',  barClass: 'bar-sante',  labelClass: 'label-sante',  btnText: '🌿 ANALYSER — SANTÉ & BIEN-ÊTRE' },
+  sport:  { label: 'Sport & Fitness',   icon: '🏋️', color: 'var(--accent2)', barClass: 'bar-sport',  labelClass: 'label-sport',  btnText: '🏋️ ANALYSER — SPORT & FITNESS' },
+  maison: { label: 'Maison & Déco',     icon: '🏠', color: 'var(--accent4)', barClass: 'bar-maison', labelClass: 'label-maison', btnText: '🏠 ANALYSER — MAISON & DÉCO' }
+};
+
+let currentUniverse = 'tech';
+let selectedNiches = [];
+let allResults = {};
+let loaderInterval;
+
+const loaderMsgs = [
+  'SCAN DES TENDANCES...', 'ANALYSE CONCURRENCE...', 'CALCUL MARGES...',
+  'ÉVALUATION VIRALITÉ...', 'DÉTECTION OPPORTUNITÉS...', 'RAPPORT EN COURS...'
+];
+
+function selectUniverse(u) {
+  currentUniverse = u;
+  document.querySelectorAll('.u-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.u-tab[data-u="${u}"]`).classList.add('active');
+  const btn = document.getElementById('launchBtn');
+  btn.dataset.u = u;
+  btn.textContent = UNIVERSES[u].btnText;
+  btn.className = `launch-btn`;
+  btn.setAttribute('data-u', u);
+
+  // Show cached results if available
+  const results = document.getElementById('results');
+  const grid = document.getElementById('nicheGrid');
+  const title = document.getElementById('resultsTitle');
+  if (allResults[u]) {
+    renderNiches(allResults[u], u);
+    results.classList.add('active');
+  } else {
+    results.classList.remove('active');
+  }
+}
+
+async function analyze() {
+  const u = currentUniverse;
+  const btn = document.getElementById('launchBtn');
+  const loader = document.getElementById('loader');
+  const results = document.getElementById('results');
+  const errorBox = document.getElementById('errorBox');
+  const loaderFill = document.getElementById('loaderFill');
+  const loaderMsg = document.getElementById('loaderMsg');
+
+  btn.disabled = true;
+  loader.classList.add('active');
+  results.classList.remove('active');
+  errorBox.classList.remove('active');
+  loaderFill.dataset.u = u;
+
+  let i = 0;
+  loaderInterval = setInterval(() => {
+    loaderMsg.textContent = loaderMsgs[i++ % loaderMsgs.length];
+  }, 1200);
+
+  const uLabel = UNIVERSES[u].label;
+
+  const prompt = `Expert dropshipping 2026, univers : ${uLabel}. Budget zéro, automatisation IA, approche mixte (test rapide OU marque selon niche).
+
+Génère 6 sous-niches spécifiques et distinctes dans cet univers.
+Réponds UNIQUEMENT en JSON valide, sans texte ni backticks. Sois très concis (max 15 mots par champ texte).
+
+{"niches":[
+{"nom":"...","score":"HOT","description":"...","margeMin":"30%","margeMax":"60%","concurrence":"Faible","tendance":"↑↑↑","budgetDepart":"0€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"marque","risque":"..."},
+{"nom":"...","score":"GOOD","description":"...","margeMin":"20%","margeMax":"50%","concurrence":"Moyenne","tendance":"↑↑","budgetDepart":"0€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"test","risque":"..."},
+{"nom":"...","score":"HOT","description":"...","margeMin":"35%","margeMax":"65%","concurrence":"Faible","tendance":"↑↑↑","budgetDepart":"0€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"both","risque":"..."},
+{"nom":"...","score":"RISING","description":"...","margeMin":"25%","margeMax":"55%","concurrence":"Faible","tendance":"↑↑↑","budgetDepart":"<50€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"marque","risque":"..."},
+{"nom":"...","score":"GOOD","description":"...","margeMin":"20%","margeMax":"45%","concurrence":"Moyenne","tendance":"↑↑","budgetDepart":"0€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"test","risque":"..."},
+{"nom":"...","score":"RISING","description":"...","margeMin":"30%","margeMax":"60%","concurrence":"Faible","tendance":"↑↑","budgetDepart":"0€","produits":["p1","p2","p3"],"strategie":"...","iaAuto":"...","approche":"both","risque":"..."}
+]}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    clearInterval(loaderInterval);
+    loader.classList.remove('active');
+    btn.disabled = false;
+
+    if (!res.ok || !data.content) throw new Error(data.error?.message || 'Erreur API');
+
+    const raw = data.content.map(i => i.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    allResults[u] = parsed.niches;
+    renderNiches(parsed.niches, u);
+    results.classList.add('active');
+
+  } catch (err) {
+    clearInterval(loaderInterval);
+    loader.classList.remove('active');
+    btn.disabled = false;
+    errorBox.textContent = `Erreur : ${err.message}. Réessayez.`;
+    errorBox.classList.add('active');
+  }
+}
+
+function scoreClass(s) {
+  if (s === 'HOT') return 'score-hot';
+  if (s === 'GOOD') return 'score-good';
+  return 'score-rising';
+}
+
+function approachBadge(a) {
+  if (a === 'marque') return `<span class="approach-badge approach-marque">🏷 MARQUE</span>`;
+  if (a === 'test') return `<span class="approach-badge approach-test">⚡ TEST RAPIDE</span>`;
+  return `<span class="approach-badge approach-both">↔ MIXTE</span>`;
+}
+
+function renderNiches(niches, u) {
+  const grid = document.getElementById('nicheGrid');
+  const title = document.getElementById('resultsTitle');
+  const lc = UNIVERSES[u].labelClass;
+  const bc = UNIVERSES[u].barClass;
+
+  title.textContent = `— ${niches.length} NICHES — ${UNIVERSES[u].label.toUpperCase()}`;
+  grid.innerHTML = '';
+
+  niches.forEach((n, idx) => {
+    const isSelected = selectedNiches.find(s => s.nom === n.nom);
+    const card = document.createElement('div');
+    card.className = 'niche-card' + (isSelected ? ' selected' : '');
+    card.innerHTML = `
+      <div class="card-accent-bar ${bc}"></div>
+      <span class="check">✓</span>
+      <div class="card-header">
+        <div class="card-name">${n.nom}</div>
+        <div class="card-score ${scoreClass(n.score)}">${n.score}</div>
+      </div>
+      <div class="card-desc">${n.description}</div>
+      <div class="card-stats">
+        <div class="stat">
+          <span class="stat-label">Marge</span>
+          <span class="stat-val" style="color:${UNIVERSES[u].color}">${n.margeMin}–${n.margeMax}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Concurrence</span>
+          <span class="stat-val">${n.concurrence}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Tendance</span>
+          <span class="stat-val" style="color:${UNIVERSES[u].color}">${n.tendance}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Budget</span>
+          <span class="stat-val">${n.budgetDepart}</span>
+        </div>
+      </div>
+      <div class="card-tags">
+        ${n.produits.map(p => `<span class="card-tag">${p}</span>`).join('')}
+      </div>
+      <div class="card-expand">
+        <div class="expand-body">
+          <div class="ex-section">
+            <div class="ex-label ${lc}">// Stratégie</div>
+            <div class="ex-text">${n.strategie}</div>
+          </div>
+          <div class="ex-section">
+            <div class="ex-label ${lc}">// Automatisation IA</div>
+            <div class="ex-text">${n.iaAuto}</div>
+          </div>
+          <div class="ex-section">
+            <div class="ex-label ${lc}">// Approche recommandée</div>
+            ${approachBadge(n.approche)}
+          </div>
+          <div class="ex-section">
+            <div class="ex-label" style="color:#ff6b35">// Risque</div>
+            <div class="ex-text" style="color:#ff6b35">${n.risque}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    let pressTimer;
+    card.addEventListener('mousedown', () => {
+      pressTimer = setTimeout(() => toggleSelect(n, u, card), 400);
+    });
+    card.addEventListener('mouseup', () => clearTimeout(pressTimer));
+    card.addEventListener('touchstart', () => {
+      pressTimer = setTimeout(() => toggleSelect(n, u, card), 400);
+    }, { passive: true });
+    card.addEventListener('touchend', () => clearTimeout(pressTimer));
+    card.addEventListener('click', () => card.classList.toggle('open'));
+
+    grid.appendChild(card);
+  });
+}
+
+function toggleSelect(niche, u, card) {
+  const idx = selectedNiches.findIndex(s => s.nom === niche.nom);
+  if (idx > -1) {
+    selectedNiches.splice(idx, 1);
+    card.classList.remove('selected');
+  } else {
+    if (selectedNiches.length >= 4) return;
+    selectedNiches.push({ ...niche, universe: u });
+    card.classList.add('selected');
+  }
+  updateCompareBar();
+}
+
+function updateCompareBar() {
+  const bar = document.getElementById('compareBar');
+  const count = document.getElementById('compareCount');
+  count.textContent = selectedNiches.length;
+  bar.classList.toggle('visible', selectedNiches.length >= 2);
+}
+
+function clearSelection() {
+  selectedNiches = [];
+  document.querySelectorAll('.niche-card.selected').forEach(c => c.classList.remove('selected'));
+  updateCompareBar();
+}
+
+function openCompare() {
+  const grid = document.getElementById('compareGrid');
+  grid.style.gridTemplateColumns = `repeat(${selectedNiches.length}, 1fr)`;
+  grid.innerHTML = '';
+
+  const fields = [
+    { label: 'Score', key: 'score' },
+    { label: 'Marge', fn: n => `${n.margeMin} – ${n.margeMax}` },
+    { label: 'Concurrence', key: 'concurrence' },
+    { label: 'Tendance', key: 'tendance' },
+    { label: 'Budget départ', key: 'budgetDepart' },
+    { label: 'Approche', key: 'approche' },
+    { label: 'Stratégie', key: 'strategie' },
+    { label: 'IA Auto', key: 'iaAuto' },
+    { label: 'Risque', key: 'risque' },
+  ];
+
+  selectedNiches.forEach(n => {
+    const col = document.createElement('div');
+    col.className = 'compare-col';
+    const uColor = UNIVERSES[n.universe]?.color || 'var(--accent)';
+    col.innerHTML = `
+      <div class="compare-col-name" style="color:${uColor}">${n.nom}</div>
+      ${fields.map(f => `
+        <div class="compare-row">
+          <span class="compare-row-label">${f.label}</span>
+          <span class="compare-row-val">${f.fn ? f.fn(n) : (n[f.key] || '—')}</span>
+        </div>
+      `).join('')}
+    `;
+    grid.appendChild(col);
+  });
+
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay') || !e.target) {
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+}
+</script>
+</body>
+</html>
