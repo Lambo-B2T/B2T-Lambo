@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boutique Builder — Ghost Operator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;700&display=swap');
+  :root {
+    --bg:#080808;--surface:#111;--surface2:#161616;--border:#1e1e1e;--border2:#2a2a2a;
+    --accent:#c8ff00;--accent2:#ff6b35;--accent3:#00d4ff;--text:#efefef;--muted:#555;--muted2:#888;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,255,0,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(200,255,0,0.015) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;}
+  .container{max-width:900px;margin:0 auto;padding:40px 20px 80px;position:relative;z-index:1;}
+  .back-btn{display:inline-block;margin-bottom:28px;font-size:10px;letter-spacing:2px;color:var(--muted2);text-decoration:none;border:1px solid var(--border2);padding:8px 16px;transition:all 0.2s;}
+  .back-btn:hover{color:var(--accent);border-color:var(--accent);}
+  .tag{font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,56px);font-weight:800;line-height:1;}
+  h1 em{color:var(--accent);font-style:normal;display:block;}
+  .subtitle{margin-top:12px;font-size:11px;color:var(--muted2);line-height:1.9;margin-bottom:40px;}
+
+  /* BRAND HERO */
+  .brand-hero{background:var(--surface);border:1px solid var(--border);padding:36px;margin-bottom:4px;position:relative;overflow:hidden;}
+  .brand-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent3),var(--accent));}
+  .brand-name{font-family:'Syne',sans-serif;font-size:clamp(36px,7vw,72px);font-weight:800;letter-spacing:-2px;margin-bottom:8px;}
+  .brand-name span{color:var(--accent3);}
+  .brand-tagline{font-size:13px;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px;}
+  .brand-desc{font-size:12px;color:#aaa;line-height:1.9;max-width:600px;}
+
+  /* SECTION */
+  .section{margin-bottom:4px;}
+  .section-header{background:var(--surface);border:1px solid var(--border);padding:20px 24px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;}
+  .section-header:hover{background:var(--surface2);}
+  .section-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+  .section-num{font-size:10px;letter-spacing:3px;color:var(--accent);margin-right:12px;}
+  .section-toggle{font-size:16px;color:var(--muted);transition:transform 0.3s;}
+  .section.open .section-toggle{transform:rotate(45deg);}
+  .section-body{max-height:0;overflow:hidden;transition:max-height 0.4s ease;}
+  .section.open .section-body{max-height:2000px;}
+  .section-inner{background:var(--surface);border:1px solid var(--border);border-top:none;padding:24px;}
+
+  /* BRAND NAMES */
+  .names-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px;margin-bottom:16px;}
+  .name-card{background:var(--surface2);border:1px solid var(--border2);padding:16px;cursor:pointer;transition:all 0.2s;position:relative;}
+  .name-card:hover{border-color:var(--accent3);}
+  .name-card.picked{border-color:var(--accent);background:rgba(200,255,0,0.05);}
+  .name-card.picked::after{content:'✓ CHOISI';position:absolute;top:8px;right:8px;font-size:8px;letter-spacing:2px;color:var(--accent);}
+  .name-main{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:4px;}
+  .name-why{font-size:10px;color:var(--muted2);line-height:1.6;}
+
+  /* COLORS */
+  .colors-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .color-swatch{width:48px;height:48px;border-radius:2px;border:1px solid var(--border2);position:relative;cursor:pointer;}
+  .color-swatch::after{content:attr(data-hex);position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap;letter-spacing:1px;}
+  .colors-wrap{margin-bottom:28px;}
+
+  /* STEPS */
+  .steps{display:flex;flex-direction:column;gap:2px;}
+  .step{background:var(--surface2);border:1px solid var(--border2);padding:18px 20px;display:flex;gap:16px;align-items:flex-start;}
+  .step-num{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent);flex-shrink:0;line-height:1;width:32px;}
+  .step-content{}
+  .step-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:6px;}
+  .step-desc{font-size:11px;color:var(--muted2);line-height:1.8;}
+  .step-link{display:inline-block;margin-top:8px;font-size:10px;color:var(--accent3);letter-spacing:1px;text-decoration:none;border-bottom:1px solid rgba(0,212,255,0.3);}
+  .step-free{font-size:9px;padding:2px 8px;background:rgba(200,255,0,0.08);border:1px solid rgba(200,255,0,0.2);color:var(--accent);letter-spacing:1px;margin-left:8px;vertical-align:middle;}
+  .step-cost{font-size:9px;padding:2px 8px;background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);color:var(--accent2);letter-spacing:1px;margin-left:8px;vertical-align:middle;}
+
+  /* PRODUCTS */
+  .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px;}
+  .product-card{background:var(--surface2);border:1px solid var(--border2);padding:18px;}
+  .product-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:8px;}
+  .product-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .pmeta{display:flex;flex-direction:column;gap:2px;}
+  .pmeta-label{font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .pmeta-val{font-size:12px;font-weight:700;color:var(--accent);}
+  .product-tip{font-size:10px;color:var(--muted2);line-height:1.7;border-top:1px solid var(--border);padding-top:10px;margin-top:6px;}
+
+  /* AI PROMPTS */
+  .prompt-box{background:#0d1a00;border:1px solid rgba(200,255,0,0.15);padding:16px;margin-bottom:8px;position:relative;}
+  .prompt-label{font-size:9px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+  .prompt-text{font-size:11px;color:#ccc;line-height:1.8;}
+  .copy-btn{position:absolute;top:12px;right:12px;background:transparent;border:1px solid rgba(200,255,0,0.2);color:var(--accent);padding:4px 10px;font-family:'IBM Plex Mono',monospace;font-size:9px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;}
+  .copy-btn:hover{background:rgba(200,255,0,0.1);}
+  .copy-btn.copied{color:#000;background:var(--accent);}
+
+  /* CHECKLIST */
+  .checklist{display:flex;flex-direction:column;gap:2px;}
+  .check-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;}
+  .check-item:hover{border-color:var(--border2);background:#1a1a1a;}
+  .check-item.done{opacity:0.5;}
+  .check-box{width:16px;height:16px;border:1px solid var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);transition:all 0.2s;}
+  .check-item.done .check-box{background:var(--accent);border-color:var(--accent);color:#000;}
+  .check-text{font-size:11px;letter-spacing:1px;}
+  .check-item.done .check-text{text-decoration:line-through;color:var(--muted);}
+  .check-tag{margin-left:auto;font-size:9px;padding:2px 8px;border:1px solid var(--border2);color:var(--muted);flex-shrink:0;}
+
+  .info-box{background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);padding:16px;font-size:11px;color:#aaa;line-height:1.9;margin-bottom:16px;}
+  .info-box strong{color:var(--accent3);}
+
+  @media(max-width:600px){.names-grid{grid-template-columns:1fr;}.products-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="index.html" class="back-btn">← DASHBOARD</a>
+  <div class="tag">// Ghost Operator — Module 02</div>
+  <h1>BOUTIQUE <em>BUILDER</em></h1>
+  <p class="subtitle">Niche : Tech Bien-être & Santé • Marché : Mondial (EN) • Approche : Marque lifestyle moderne</p>
+
+  <!-- BRAND HERO -->
+  <div class="brand-hero" style="margin-bottom:32px;">
+    <div class="brand-name">VITALUX<span>.</span></div>
+    <div class="brand-tagline">Feel Better. Live Modern.</div>
+    <div class="brand-desc">Marque lifestyle moderne centrée sur la tech bien-être — pour les actifs 25-45 ans qui optimisent leur corps et leur énergie avec des outils intelligents. Positionnement : accessible mais premium.</div>
+  </div>
+
+  <!-- SECTION 1 : NOM DE MARQUE -->
+  <div class="section open" id="s1">
+    <div class="section-header" onclick="toggleSection('s1')">
+      <div><span class="section-num">01</span><span class="section-title">Nom de marque — 8 options</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="info-box"><strong>Comment choisir :</strong> Le nom doit être court (2 syllabes max), mémorable, disponible en .com, et évoquer le bien-être ou la performance. Cliquez pour sélectionner votre favori.</div>
+        <div class="names-grid" id="namesGrid">
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">VITALUX</div><div class="name-why">Vital + Lux — énergie et premium. Sonne international.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">ZENFLOW</div><div class="name-why">Zen + Flow — bien-être et mouvement. Très lifestyle.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">PULSELAB</div><div class="name-why">Pulse + Lab — tech et innovation santé. Sérieux.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">AURATEK</div><div class="name-why">Aura + Tek — bien-être high-tech. Unique et moderne.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">REVIVE.CO</div><div class="name-why">Revive = récupération. Extension .co trendy.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">LUMION</div><div class="name-why">Lumière + ion — luminothérapie, énergie, modernité.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">KINEXA</div><div class="name-why">Kinésie + xa — mouvement et tech. Court et percutant.</div></div>
+          <div class="name-card" onclick="pickName(this)"><div class="name-main">WELLTEK</div><div class="name-why">Wellness + Tech — direct, clair, international.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 : IDENTITÉ VISUELLE -->
+  <div class="section" id="s2">
+    <div class="section-header" onclick="toggleSection('s2')">
+      <div><span class="section-num">02</span><span class="section-title">Identité visuelle — couleurs & typographie</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="info-box"><strong>Palette recommandée :</strong> Fond sombre + accent électrique + blanc cassé. Moderne, premium, lifestyle tech.</div>
+        <div class="colors-wrap">
+          <p style="font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:24px;">// Palette principale</p>
+          <div class="colors-row">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+              <div class="color-swatch" data-hex="#0A0A0F" style="background:#0A0A0F;width:56px;height:56px;"></div>
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">#0A0A0F<br>Fond</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+              <div class="color-swatch" data-hex="#00D4FF" style="background:#00D4FF;width:56px;height:56px;"></div>
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">#00D4FF<br>Accent</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+              <div class="color-swatch" data-hex="#FFFFFF" style="background:#FFFFFF;width:56px;height:56px;"></div>
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">#FFFFFF<br>Texte</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+              <div class="color-swatch" data-hex="#1A1A2E" style="background:#1A1A2E;width:56px;height:56px;"></div>
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">#1A1A2E<br>Surface</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+              <div class="color-swatch" data-hex="#C8FF00" style="background:#C8FF00;width:56px;height:56px;"></div>
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;">#C8FF00<br>CTA</span>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;">// Typographie</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--surface2);border:1px solid var(--border2);padding:16px;">
+            <div style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;">TITRES — Syne Bold 800</div>
+            <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;">Feel Better. Live Modern.</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border2);padding:16px;">
+            <div style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;">CORPS — IBM Plex Mono / DM Sans</div>
+            <div style="font-size:13px;color:#ccc;line-height:1.8;">Advanced wellness technology for the modern lifestyle. Recover faster, feel better, perform at your best.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 : PRODUITS DE LANCEMENT -->
+  <div class="section" id="s3">
+    <div class="section-header" onclick="toggleSection('s3')">
+      <div><span class="section-num">03</span><span class="section-title">Catalogue de lancement — 6 produits</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="info-box"><strong>Stratégie :</strong> Commencez avec 6 produits max. Un héros (pistolet massage), deux complémentaires, trois accessoires. Testez les prix, gardez ce qui vend.</div>
+        <div class="products-grid">
+          <div class="product-card">
+            <div class="product-name">⭐ Massage Gun Pro</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">12–18€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">49–69€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~65%</span></div>
+            </div>
+            <div class="product-tip">Produit héros — le plus viral sur TikTok. Cherchez "massage gun" sur AliExpress, filtrez +500 commandes, choisissez le modèle avec 4.5★ min.</div>
+          </div>
+          <div class="product-card">
+            <div class="product-name">EMS Ab Stimulator</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">8–15€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">39–55€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~70%</span></div>
+            </div>
+            <div class="product-tip">Fort potentiel viral "before/after". Évitez les allégations "perte de poids" dans vos descriptions — parlez de "muscle activation".</div>
+          </div>
+          <div class="product-card">
+            <div class="product-name">Light Therapy Lamp</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">15–25€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">59–89€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~72%</span></div>
+            </div>
+            <div class="product-tip">Tendance SAD (Seasonal Affective Disorder) — pics en automne/hiver. Angle marketing : énergie matinale et focus.</div>
+          </div>
+          <div class="product-card">
+            <div class="product-name">Acupressure Mat Set</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">10–18€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">44–65€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~68%</span></div>
+            </div>
+            <div class="product-tip">Très viral sur Pinterest et Instagram wellness. Vendez en bundle avec un guide PDF de routines (généré par IA, valeur perçue x2).</div>
+          </div>
+          <div class="product-card">
+            <div class="product-name">Neck & Shoulder Massager</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">14–22€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">55–79€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~71%</span></div>
+            </div>
+            <div class="product-tip">Cible les télétravailleurs — douleurs cervicales. Audience très large, contenu "work from home wellness" très partagé.</div>
+          </div>
+          <div class="product-card">
+            <div class="product-name">Red Light Therapy Wand</div>
+            <div class="product-meta">
+              <div class="pmeta"><span class="pmeta-label">Prix AliExpress</span><span class="pmeta-val">18–30€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Prix vente</span><span class="pmeta-val">69–99€</span></div>
+              <div class="pmeta"><span class="pmeta-label">Marge</span><span class="pmeta-val">~75%</span></div>
+            </div>
+            <div class="product-tip">Tendance biohacking en forte croissance. Angle beauté + récupération musculaire. Prix premium justifié par la technologie.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 : SETUP SHOPIFY -->
+  <div class="section" id="s4">
+    <div class="section-header" onclick="toggleSection('s4')">
+      <div><span class="section-num">04</span><span class="section-title">Setup Shopify — étape par étape</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Créer le compte Shopify <span class="step-cost">1€/mois — 3 mois</span></div>
+              <div class="step-desc">Allez sur shopify.com → "Start free trial" → choisissez le plan Basic à 1€/mois pour les 3 premiers mois. Utilisez le nom de votre marque comme nom de boutique.</div>
+              <a href="https://shopify.com" class="step-link" target="_blank">→ shopify.com</a>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Choisir le thème <span class="step-free">GRATUIT</span></div>
+              <div class="step-desc">Online Store → Themes → Thème gratuit recommandé : "Dawn" (minimaliste, rapide) ou "Refresh" (lifestyle moderne). Personnalisez les couleurs avec votre palette.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Installer DSers <span class="step-free">GRATUIT</span></div>
+              <div class="step-desc">Apps → DSers-AliExpress Dropshipping → Installer. DSers connecte votre boutique à AliExpress automatiquement. Chaque commande est transmise au fournisseur sans action manuelle.</div>
+              <a href="https://dsers.com" class="step-link" target="_blank">→ dsers.com</a>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Importer vos 6 produits <span class="step-free">GRATUIT</span></div>
+              <div class="step-desc">Sur AliExpress, trouvez chaque produit (filtrez : +500 commandes, 4.5★ min, livraison AliExpress Standard Shipping). Via DSers, importez en 1 clic dans Shopify.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <div class="step-title">Configurer Stripe / PayPal <span class="step-free">GRATUIT</span></div>
+              <div class="step-desc">Settings → Payments → Activez Shopify Payments (Stripe) et PayPal. Pour les marchés mondiaux, Stripe est indispensable. Commissions : 2.9% + 0.30$ par transaction.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+              <div class="step-title">Pages obligatoires <span class="step-free">GRATUIT</span></div>
+              <div class="step-desc">Créez : About Us, Refund Policy, Privacy Policy, Shipping Policy. Utilisez l'IA pour rédiger ces pages en anglais en 2 minutes. Sans ces pages, Stripe peut bloquer votre compte.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-content">
+              <div class="step-title">Domaine personnalisé <span class="step-cost">~10€/an</span></div>
+              <div class="step-desc">Settings → Domains → Buy new domain. Choisissez votre-marque.com (~10€/an sur Namecheap ou directement Shopify). Optionnel au départ, recommandé pour la crédibilité.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 : PROMPTS IA -->
+  <div class="section" id="s5">
+    <div class="section-header" onclick="toggleSection('s5')">
+      <div><span class="section-num">05</span><span class="section-title">Prompts IA — fiches produits & pages</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="prompt-box">
+          <div class="prompt-label">// Fiche produit</div>
+          <button class="copy-btn" onclick="copyPrompt(this)">COPIER</button>
+          <div class="prompt-text">Write a compelling Shopify product description for a [PRODUCT NAME] in the wellness tech niche. Brand name: [YOUR BRAND]. Tone: modern, lifestyle, premium but accessible. Target audience: busy professionals aged 25-45 who want to recover faster and feel better. Include: a punchy headline, 3 key benefits with emojis, a short paragraph about the technology, and a clear call to action. Length: 150-200 words. Language: English.</div>
+        </div>
+        <div class="prompt-box">
+          <div class="prompt-label">// Page About Us</div>
+          <button class="copy-btn" onclick="copyPrompt(this)">COPIER</button>
+          <div class="prompt-text">Write an "About Us" page for [YOUR BRAND], a wellness tech e-commerce brand. Our mission is to make advanced recovery and wellness technology accessible to everyone. Tone: modern, authentic, inspiring. Mention: we curate the best wellness tech products, we believe in science-backed recovery, we ship worldwide. Length: 120 words. No clichés.</div>
+        </div>
+        <div class="prompt-box">
+          <div class="prompt-label">// Script TikTok / Reels</div>
+          <button class="copy-btn" onclick="copyPrompt(this)">COPIER</button>
+          <div class="prompt-text">Write a 30-second TikTok video script for a [PRODUCT NAME]. Hook (first 3 seconds must stop the scroll): start with a relatable problem (back pain, stress, bad sleep). Show the product in use. End with a clear result and soft CTA. Tone: authentic, not salesy. No voiceover — on-screen text only. Include 5 relevant hashtags.</div>
+        </div>
+        <div class="prompt-box">
+          <div class="prompt-label">// Email de bienvenue</div>
+          <button class="copy-btn" onclick="copyPrompt(this)">COPIER</button>
+          <div class="prompt-text">Write a welcome email for new customers of [YOUR BRAND], a wellness tech brand. Subject line: 3 options to A/B test. Body: warm welcome, brand story in 2 sentences, what to expect (tips, new products, exclusive deals), invite to follow on social media. Tone: friendly, modern, not corporate. Length: 120 words.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 : CHECKLIST LANCEMENT -->
+  <div class="section" id="s6">
+    <div class="section-header" onclick="toggleSection('s6')">
+      <div><span class="section-num">06</span><span class="section-title">Checklist lancement — J1 à J7</span></div>
+      <span class="section-toggle">+</span>
+    </div>
+    <div class="section-body">
+      <div class="section-inner">
+        <div class="checklist" id="checklist">
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Choisir le nom de marque définitif</span><span class="check-tag">J1</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Créer compte Shopify (1€/mois)</span><span class="check-tag">J1</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Installer thème Dawn ou Refresh</span><span class="check-tag">J1</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Installer DSers + connecter AliExpress</span><span class="check-tag">J2</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Trouver et importer 6 produits</span><span class="check-tag">J2</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Rédiger fiches produits avec IA (prompts ci-dessus)</span><span class="check-tag">J3</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Créer pages légales (About, Policy, Shipping)</span><span class="check-tag">J3</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Configurer Stripe + PayPal</span><span class="check-tag">J4</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Créer compte TikTok + Instagram au nom de la marque</span><span class="check-tag">J4</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Créer 3 premiers contenus TikTok avec IA</span><span class="check-tag">J5</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Commander les produits pour tester la qualité (optionnel)</span><span class="check-tag">J5</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Passer une commande test sur votre boutique</span><span class="check-tag">J6</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">Publier les premiers contenus + boutique en ligne</span><span class="check-tag">J7</span></div>
+          <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text">🚀 LANCEMENT OFFICIEL</span><span class="check-tag">J7</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+function toggleSection(id){
+  const s=document.getElementById(id);
+  s.classList.toggle('open');
+}
+
+function pickName(card){
+  document.querySelectorAll('.name-card').forEach(c=>c.classList.remove('picked'));
+  card.classList.add('picked');
+}
+
+function toggleCheck(item){
+  item.classList.toggle('done');
+  // Save to localStorage
+  saveChecklist();
+}
+
+function saveChecklist(){
+  const items=document.querySelectorAll('.check-item');
+  const state=[...items].map(i=>i.classList.contains('done'));
+  try{ localStorage.setItem('go_checklist',JSON.stringify(state)); }catch(e){}
+}
+
+function loadChecklist(){
+  try{
+    const state=JSON.parse(localStorage.getItem('go_checklist')||'[]');
+    const items=document.querySelectorAll('.check-item');
+    state.forEach((done,i)=>{ if(done&&items[i]) items[i].classList.add('done'); });
+  }catch(e){}
+}
+
+function copyPrompt(btn){
+  const text=btn.nextElementSibling.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='✓ COPIÉ';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='COPIER'; btn.classList.remove('copied'); },2000);
+  });
+}
+
+loadChecklist();
+</script>
+</body>
+</html>
