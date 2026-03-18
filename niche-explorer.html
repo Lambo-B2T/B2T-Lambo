@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niche Explorer — Ghost Operator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;700&display=swap');
+  :root {
+    --bg:#080808;--surface:#111;--surface2:#161616;--border:#1e1e1e;--border2:#2a2a2a;
+    --accent:#c8ff00;--accent2:#ff6b35;--accent3:#00d4ff;--accent4:#bf5fff;
+    --text:#efefef;--muted:#555;--muted2:#888;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,255,0,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(200,255,0,0.015) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;}
+  .container{max-width:1000px;margin:0 auto;padding:40px 20px 100px;position:relative;z-index:1;}
+  header{margin-bottom:40px;}
+  .tag{font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(32px,6vw,64px);font-weight:800;line-height:1;}
+  h1 em{color:var(--accent);font-style:normal;display:block;}
+  .subtitle{margin-top:12px;font-size:11px;color:var(--muted2);line-height:1.9;}
+  .universe-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:30px;}
+  .u-tab{background:var(--surface);border:1px solid var(--border);padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+  .u-tab::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;transform:scaleX(0);transition:transform 0.2s;}
+  .u-tab.active,.u-tab:hover{background:var(--surface2);}
+  .u-tab.active::after{transform:scaleX(1);}
+  .u-tab[data-u="tech"]::after{background:var(--accent3);}
+  .u-tab[data-u="sante"]::after{background:var(--accent);}
+  .u-tab[data-u="sport"]::after{background:var(--accent2);}
+  .u-tab[data-u="maison"]::after{background:var(--accent4);}
+  .u-icon{font-size:22px;display:block;margin-bottom:5px;}
+  .u-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);}
+  .niche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;margin-bottom:20px;}
+  .niche-card{background:var(--surface);border:1px solid var(--border);padding:20px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;opacity:0;transform:translateY(16px);animation:up 0.4s forwards;}
+  @keyframes up{to{opacity:1;transform:translateY(0);}}
+  .niche-card:hover{background:var(--surface2);border-color:var(--border2);}
+  .niche-card.selected{border-color:var(--accent)!important;background:rgba(200,255,0,0.04);}
+  .accent-bar{position:absolute;top:0;left:0;right:0;height:2px;}
+  .bar-tech{background:var(--accent3);}.bar-sante{background:var(--accent);}.bar-sport{background:var(--accent2);}.bar-maison{background:var(--accent4);}
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px;}
+  .card-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;flex:1;line-height:1.2;}
+  .card-score{font-size:9px;padding:3px 8px;border:1px solid;white-space:nowrap;flex-shrink:0;}
+  .score-hot{border-color:var(--accent2);color:var(--accent2);}
+  .score-good{border-color:var(--accent);color:var(--accent);}
+  .score-rising{border-color:var(--accent3);color:var(--accent3);}
+  .card-desc{font-size:11px;color:var(--muted2);line-height:1.7;margin-bottom:14px;}
+  .card-stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+  .stat{display:flex;flex-direction:column;gap:2px;}
+  .stat-label{font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .stat-val{font-size:12px;font-weight:700;}
+  .card-tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .card-tag{font-size:9px;padding:3px 7px;background:rgba(255,255,255,0.03);border:1px solid var(--border2);color:var(--muted2);}
+  .card-expand{max-height:0;overflow:hidden;transition:max-height 0.35s ease;}
+  .niche-card.open .card-expand{max-height:600px;}
+  .expand-body{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:12px;}
+  .ex-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;}
+  .ex-text{font-size:11px;color:#aaa;line-height:1.8;}
+  .label-tech{color:var(--accent3);}.label-sante{color:var(--accent);}.label-sport{color:var(--accent2);}.label-maison{color:var(--accent4);}
+  .approach-badge{display:inline-block;font-size:9px;padding:3px 10px;letter-spacing:1px;margin-top:5px;}
+  .approach-marque{background:rgba(200,255,0,0.08);border:1px solid rgba(200,255,0,0.2);color:var(--accent);}
+  .approach-test{background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);color:var(--accent2);}
+  .approach-both{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);color:var(--accent3);}
+  .check{display:none;position:absolute;top:10px;right:10px;font-size:14px;color:var(--accent);}
+  .niche-card.selected .check{display:block;}
+  .select-hint{font-size:10px;color:var(--muted);letter-spacing:1px;text-align:right;margin-bottom:20px;}
+  .compare-bar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid var(--border2);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;transform:translateY(100%);transition:transform 0.3s;z-index:100;}
+  .compare-bar.visible{transform:translateY(0);}
+  .compare-info{font-size:11px;color:var(--muted2);}
+  .compare-info strong{color:var(--accent);font-size:14px;}
+  .compare-btn{background:var(--accent);color:#000;border:none;padding:10px 20px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:2px;cursor:pointer;}
+  .clear-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;overflow-y:auto;padding:20px;}
+  .modal-overlay.active{display:flex;align-items:flex-start;justify-content:center;}
+  .modal{background:var(--surface);border:1px solid var(--border2);max-width:900px;width:100%;margin:auto;padding:28px;}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;}
+  .modal-close{background:none;border:1px solid var(--border2);color:var(--muted2);padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;}
+  .compare-grid{display:grid;gap:2px;}
+  .compare-col{background:var(--surface2);border:1px solid var(--border);padding:18px;}
+  .compare-col-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+  .compare-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .compare-row:last-child{border-bottom:none;}
+  .compare-row-label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;flex-shrink:0;}
+  .compare-row-val{font-size:11px;color:var(--text);text-align:right;}
+  .back-btn{display:inline-block;margin-bottom:24px;font-size:10px;letter-spacing:2px;color:var(--muted2);text-decoration:none;border:1px solid var(--border2);padding:8px 16px;transition:all 0.2s;}
+  .back-btn:hover{color:var(--accent);border-color:var(--accent);}
+  @media(max-width:600px){.universe-tabs{grid-template-columns:repeat(2,1fr);}.niche-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="index.html" class="back-btn">← DASHBOARD</a>
+  <header>
+    <div class="tag">// Ghost Operator — Module 01b</div>
+    <h1>NICHE <em>EXPLORER</em></h1>
+    <p class="subtitle">24 niches analysées • 4 univers • Cliquer = détails • Appui long = comparer</p>
+  </header>
+  <div class="universe-tabs">
+    <div class="u-tab active" data-u="tech" onclick="showUniverse('tech')"><span class="u-icon">⚡</span><span class="u-label">Tech</span></div>
+    <div class="u-tab" data-u="sante" onclick="showUniverse('sante')"><span class="u-icon">🌿</span><span class="u-label">Santé</span></div>
+    <div class="u-tab" data-u="sport" onclick="showUniverse('sport')"><span class="u-icon">🏋️</span><span class="u-label">Sport</span></div>
+    <div class="u-tab" data-u="maison" onclick="showUniverse('maison')"><span class="u-icon">🏠</span><span class="u-label">Maison</span></div>
+  </div>
+  <div class="select-hint">↓ Cliquer = détails • Appui long = sélectionner pour comparer</div>
+  <div class="niche-grid" id="nicheGrid"></div>
+</div>
+<div class="compare-bar" id="compareBar">
+  <div class="compare-info"><strong id="compareCount">0</strong> sélectionnées</div>
+  <button class="clear-btn" onclick="clearSelection()">EFFACER</button>
+  <button class="compare-btn" onclick="openCompare()">COMPARER →</button>
+</div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">COMPARAISON</div><button class="modal-close" onclick="closeModal()">✕ FERMER</button></div>
+    <div class="compare-grid" id="compareGrid"></div>
+  </div>
+</div>
+<script>
+const DATA={tech:{color:'var(--accent3)',barClass:'bar-tech',labelClass:'label-tech',niches:[{nom:"Gadgets Maison Connectée",score:"HOT",description:"Prises intelligentes, capteurs, mini-caméras — la domotique grand public explose.",margeMin:"35%",margeMax:"65%",concurrence:"Moyenne",tendance:"↑↑↑",budget:"0€",produits:["Prise connectée WiFi","Capteur température","Ampoule RGB","Mini caméra"],strategie:"Ciblez les primo-accédants à la domotique avec des kits starter abordables. TikTok est parfait pour des démos visuelles avant/après.",iaAuto:"L'IA génère des fiches produits techniques, des comparatifs et des scripts démo vidéo automatiquement.",approche:"both",risque:"Concurrence Amazon directe — différenciez par le bundle et le conseil."},{nom:"Accessoires Gaming Mobile",score:"HOT",description:"Manettes Bluetooth, refroidisseurs, triggers — le gaming mobile touche 2 milliards de joueurs.",margeMin:"40%",margeMax:"70%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Manette télescopique","Refroidisseur Peltier","Trigger L/R","Support ventilé"],strategie:"Ciblez les joueurs de PUBG/COD Mobile. YouTube Shorts et TikTok Gaming sont vos canaux principaux.",iaAuto:"L'IA crée des reviews produits, comparatifs et contenu communautaire gaming 24h/24.",approche:"marque",risque:"Compatibilité variable selon les téléphones — précisez les modèles supportés."},{nom:"Tech Bien-être & Santé",score:"RISING",description:"Masseurs électriques, EMS, lampes thérapeutiques — fusion tech et wellness en plein essor.",margeMin:"45%",margeMax:"75%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Pistolet massage","EMS abdos","Lampe luminothérapie","Acupuncture électrique"],strategie:"Positionnement premium — ciblez les actifs stressés 25-45 ans. Instagram et Pinterest pour le lifestyle.",iaAuto:"L'IA produit des guides bien-être, routines personnalisées et témoignages clients automatisés.",approche:"marque",risque:"Réglementation santé stricte — éviter les allégations médicales."},{nom:"Accessoires Smartphone Premium",score:"GOOD",description:"Coques MagSafe, chargeurs rapides 100W, supports voiture — achat récurrent garanti.",margeMin:"30%",margeMax:"55%",concurrence:"Forte",tendance:"↑↑",budget:"0€",produits:["Coque MagSafe","Chargeur GaN 100W","Support voiture magnétique","Câble tressé"],strategie:"Différenciez par le design et packaging premium. Le branding justifie un prix 2x supérieur à AliExpress.",iaAuto:"L'IA optimise les fiches SEO, gère les reviews et crée du contenu unboxing.",approche:"test",risque:"Marché saturé — la différenciation par la marque est indispensable."},{nom:"Outils Productivité & Bureau",score:"GOOD",description:"Lampes LED bureau, supports ergonomiques, claviers compacts — le télétravail reste structurel.",margeMin:"35%",margeMax:"60%",concurrence:"Moyenne",tendance:"↑↑",budget:"0€",produits:["Lampe LED bureau","Support laptop ergonomique","Mini clavier BT","Webcam 4K"],strategie:"Ciblez les télétravailleurs et freelances. LinkedIn + Pinterest pour toucher les professionnels.",iaAuto:"L'IA génère du contenu productivité, guides setup bureau et comparatifs ergonomie.",approche:"both",risque:"Saisonnalité — pics en rentrée et janvier."},{nom:"Gadgets Survie & Outdoor Tech",score:"RISING",description:"Lampes dynamo, chargeurs solaires, purificateurs d'eau — la tendance prepper explose.",margeMin:"40%",margeMax:"68%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Chargeur solaire pliable","Lampe dynamo multifonction","Filtre eau portable","Radio urgence"],strategie:"Communauté très engagée — forums outdoor, groupes Facebook survivalistes. Contenu éducatif qui convertit.",iaAuto:"L'IA produit des guides survie, check-lists équipement et scénarios d'usage concrets.",approche:"marque",risque:"Les mauvaises reviews sur ce segment sont particulièrement virales."}]},sante:{color:'var(--accent)',barClass:'bar-sante',labelClass:'label-sante',niches:[{nom:"Sommeil & Récupération",score:"HOT",description:"Masques sommeil, diffuseurs huiles essentielles, oreillers ergonomiques — marché +15%/an.",margeMin:"45%",margeMax:"75%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Masque sommeil satiné","Diffuseur ultrasonique","Oreiller ergonomique","Spray linge lavande"],strategie:"Le storytelling émotionnel fonctionne très bien — 'dormez mieux, vivez mieux'. Pinterest et Instagram sont vos vitrines.",iaAuto:"L'IA crée des routines sommeil personnalisées, articles SEO bien-être et séquences email.",approche:"marque",risque:"Produits très copiés — investissez dans le branding dès le premier mois."},{nom:"Santé Digestive & Detox",score:"HOT",description:"Thés detox, bouteilles infuseurs — la santé intestinale est la tendance n°1 en 2026.",margeMin:"50%",margeMax:"80%",concurrence:"Moyenne",tendance:"↑↑↑",budget:"0€",produits:["Bouteille infuseur thé","Kit detox tisanes","Journal bien-être","Gourde filtrante"],strategie:"Éducation = conversion. Des posts sur le microbiome génèrent 3x plus d'engagement que la pub directe.",iaAuto:"L'IA génère des programmes detox personnalisés, recettes et contenu éducatif santé intestinale.",approche:"marque",risque:"Éviter absolument les allégations de santé non prouvées — risque légal réel."},{nom:"Beauté Naturelle & Clean Beauty",score:"HOT",description:"Rouleaux jade, gua sha, huiles végétales — le clean beauty touche 60% des femmes 20-40 ans.",margeMin:"55%",margeMax:"85%",concurrence:"Moyenne",tendance:"↑↑↑",budget:"0€",produits:["Rouleau jade visage","Gua sha quartz","Huile rosier muscat","Masque argile"],strategie:"TikTok BeautyTok est la mine d'or — un seul viral peut générer 10 000€ en 48h. Misez sur les tutos.",iaAuto:"L'IA crée des routines beauté personnalisées par type de peau et des réponses SAV.",approche:"marque",risque:"Les communautés clean beauty détectent immédiatement les marques non sincères."},{nom:"Fitness Maison Minimaliste",score:"GOOD",description:"Bandes élastiques, roues abdos, tapis yoga — l'entraînement à domicile reste la norme.",margeMin:"40%",margeMax:"65%",concurrence:"Moyenne",tendance:"↑↑",budget:"0€",produits:["Set bandes élastiques","Roue abdominale","Tapis yoga antidérapant","Corde à sauter lestée"],strategie:"Les programmes d'entraînement offerts avec l'achat fidélisent et justifient un prix premium.",iaAuto:"L'IA génère des programmes fitness complets, challenges 30 jours et contenu motivation.",approche:"both",risque:"Saisonnalité forte (janvier, été) — préparez vos campagnes 6 semaines à l'avance."},{nom:"Santé Mentale & Anti-Stress",score:"RISING",description:"Journaux de gratitude, fidgets, cristaux — le marché anti-stress croît de 20%/an.",margeMin:"50%",margeMax:"78%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Journal gratitude","Fidget cube","Bougie soja méditation","Cristaux set débutant"],strategie:"La communauté bien-être mental est hyper engagée sur Instagram et TikTok. Contenu authentique.",iaAuto:"L'IA produit des affirmations quotidiennes, méditations guidées texte et newsletters bien-être.",approche:"marque",risque:"Sujet sensible — le ton doit être bienveillant et non culpabilisant."},{nom:"Nutrition Sport & Performance",score:"GOOD",description:"Shakers, pilluliers, balances alimentaires — le marché des sportifs amateurs est massif et récurrent.",margeMin:"35%",margeMax:"60%",concurrence:"Moyenne",tendance:"↑↑",budget:"0€",produits:["Shaker électrique","Pillulier semainier","Balance nutritionnelle","Lunch box isotherme"],strategie:"Les challenges de transformation physique génèrent de l'UGC (contenu utilisateur) gratuit et viral.",iaAuto:"L'IA crée des plans nutritionnels, calculateurs de macros et contenu transformation.",approche:"test",risque:"Positionnez-vous sur l'accessoire plutôt que le complément alimentaire."}]},sport:{color:'var(--accent2)',barClass:'bar-sport',labelClass:'label-sport',niches:[{nom:"Running & Trail Urbain",score:"HOT",description:"Gilets hydratation, vestes légères, lampes frontales — le running est le sport n°1 en Europe.",margeMin:"40%",margeMax:"65%",concurrence:"Moyenne",tendance:"↑↑↑",budget:"0€",produits:["Gilet hydratation trail","Veste coupe-vent","Ceinture running","Lampe frontale trail"],strategie:"Les communautés de runners sont très actives — Strava, groupes Facebook locaux, clubs de running.",iaAuto:"L'IA génère des plans d'entraînement personnalisés, guides de course et contenu motivationnel.",approche:"marque",risque:"Les runners exigeants repèrent vite la mauvaise qualité — testez avant de vendre."},{nom:"Yoga & Pilates Premium",score:"HOT",description:"Tapis épais liège, blocs, sangles — le yoga touche 300M de pratiquants avec fort pouvoir d'achat.",margeMin:"50%",margeMax:"78%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Tapis yoga 10mm liège","Set blocs yoga","Sangle étirement","Sac transport tapis"],strategie:"Pinterest et Instagram sont les canaux rois. Les visuels de poses yoga génèrent un fort engagement organique.",iaAuto:"L'IA crée des séquences de cours, guides débutants et contenu spiritualité lié au yoga.",approche:"marque",risque:"Le branding doit paraître authentique — les pratiquants sérieux connaissent les bonnes marques."},{nom:"Cyclisme & Mobilité Urbaine",score:"RISING",description:"Antivols, sacoches, éclairages LED — le vélo urbain a explosé avec +40% d'utilisateurs depuis 2020.",margeMin:"38%",margeMax:"62%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Antivol câble renforcé","Sacoche guidon","Kit éclairage LED USB","Poncho pluie vélo"],strategie:"Ciblez les navetteurs urbains — contenu pratique 'vie à vélo en ville'. YouTube et TikTok city life.",iaAuto:"L'IA produit des guides entretien vélo, itinéraires et contenu lifestyle cycliste urbain.",approche:"both",risque:"Saisonnalité printemps/été — préparez une stratégie hiver avec accessoires pluie/froid."},{nom:"Sports de Combat & Self-Defense",score:"GOOD",description:"Gants MMA, protège-dents, sacs de frappe — marché en croissance avec l'essor du MMA.",margeMin:"42%",margeMax:"68%",concurrence:"Faible",tendance:"↑↑",budget:"0€",produits:["Gants MMA entraînement","Sac frappe mural","Protège-dents","Bandes de boxe"],strategie:"YouTube est le canal principal — tutoriels techniques, combos, défense personnelle. Communauté très engagée.",iaAuto:"L'IA génère des programmes d'entraînement, guides techniques et contenu motivation combatif.",approche:"test",risque:"Précisez toujours le niveau débutant/confirmé des produits — questions de sécurité."},{nom:"Natation & Sports Aquatiques",score:"RISING",description:"Lunettes natation, bonnets silicone, palmes fitness — marché sous-exploité avec d'excellentes marges.",margeMin:"45%",margeMax:"72%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Lunettes natation anti-buée","Bonnet silicone","Palmes entraînement","Planche natation"],strategie:"Les piscines municipales = 6M de nageurs en France. Partenariats avec clubs de natation locaux.",iaAuto:"L'IA crée des plans d'entraînement natation, guides technique et contenu compétition.",approche:"marque",risque:"Produits en contact avec l'eau — les problèmes de qualité génèrent des retours massifs."},{nom:"Padel & Sports de Raquette",score:"HOT",description:"Le padel est le sport qui croît le plus vite en Europe — 25M de joueurs, 1000 nouveaux courts/mois.",margeMin:"48%",margeMax:"75%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Surgrip padel","Protège-raquette","Sac padel","Balles padel pack"],strategie:"Le padel a une communauté ultra-active sur Instagram et des clubs très engagés. Sponsorisez des tournois amateurs.",iaAuto:"L'IA produit du contenu technique padel, conseils de jeu et posts pour la communauté.",approche:"marque",risque:"Forte concurrence émergente — agissez maintenant avant que le marché sature."}]},maison:{color:'var(--accent4)',barClass:'bar-maison',labelClass:'label-maison',niches:[{nom:"Organisation & Rangement Minimaliste",score:"HOT",description:"Boîtes modulaires, séparateurs tiroirs — Pinterest génère des millions de vues sur ce segment.",margeMin:"50%",margeMax:"80%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Set boîtes modulaires","Séparateur tiroir extensible","Organisateur câbles","Boîte acrylique cosmétiques"],strategie:"Pinterest et Instagram sont parfaits — les photos before/after rangement sont virales par nature.",iaAuto:"L'IA génère des guides organisation, méthodes KonMari adaptées et contenu déco minimaliste.",approche:"marque",risque:"Tendance très imitée — différenciez par l'esthétique et la cohérence visuelle de votre catalogue."},{nom:"Jardinage Urbain & Balcon",score:"HOT",description:"Jardinières modulaires, kits potager intérieur — 70% des urbains veulent jardiner chez eux.",margeMin:"45%",margeMax:"72%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Kit potager intérieur LED","Jardinière suspendue","Terrarium géométrique","Outils jardinage compact"],strategie:"YouTube tutoriels jardinage = trafic organique massif. Le contenu éducatif convertit très bien.",iaAuto:"L'IA crée des guides de culture, calendriers de plantation et conseils personnalisés par plante.",approche:"marque",risque:"Forte saisonnalité printemps — préparez votre catalogue hivernal avec plantes d'intérieur."},{nom:"Cuisine & Art de la Table",score:"GOOD",description:"Ustensiles design, planches à découper, sets épices — l'esthétique cuisine est une obsession sur les réseaux.",margeMin:"42%",margeMax:"68%",concurrence:"Moyenne",tendance:"↑↑",budget:"0€",produits:["Planche découper bois gravée","Set couteaux céramique","Organisateur épices","Moules silicone design"],strategie:"Les foodbloggers sont vos ambassadeurs naturels. Offrez des produits en échange de reviews authentiques.",iaAuto:"L'IA génère des recettes associées aux produits, contenu mise en scène cuisine et idées cadeaux.",approche:"both",risque:"Les produits contact alimentaire ont des normes strictes — vérifiez les certifications."},{nom:"Décoration Murale & Art Print",score:"RISING",description:"Posters esthétiques, cadres polaroid, tableaux LED — la déco murale est le premier achat des 18-30 ans.",margeMin:"55%",margeMax:"85%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Poster esthétique A3","Cadre photo minimaliste","Guirlande polaroid","Tableau LED néon"],strategie:"TikTok room transformation est viral. Ciblez les étudiants et jeunes actifs qui redécorent leur espace.",iaAuto:"L'IA crée des ambiances déco personnalisées, guides style intérieur et contenu inspiration.",approche:"test",risque:"Produits très facilement copiables — proposez des designs exclusifs générés par IA."},{nom:"Nettoyage & Entretien Écologique",score:"GOOD",description:"Lingettes lavables, brosses bambou — le ménage écolo est désormais mainstream.",margeMin:"48%",margeMax:"74%",concurrence:"Moyenne",tendance:"↑↑",budget:"0€",produits:["Set lingettes lavables","Brosse WC bambou","Spray nettoyant concentré","Filets lavage"],strategie:"L'argument écologique + économique est imbattable. Affichez les économies annuelles réalisées.",iaAuto:"L'IA génère du contenu zéro-déchet, comparatifs économiques et guides transition écologique.",approche:"marque",risque:"Claims écologiques scrutés — assurez-vous que vos fournisseurs ont les certifications."},{nom:"Éclairage d'Ambiance & Déco Lumineuse",score:"RISING",description:"Guirlandes LED, lampes sel himalaya, bougies LED — l'éclairage d'ambiance est le produit cadeau parfait.",margeMin:"52%",margeMax:"80%",concurrence:"Faible",tendance:"↑↑↑",budget:"0€",produits:["Guirlande LED extérieure","Lampe sel himalaya USB","Bougie LED flamme","Projecteur étoiles chambre"],strategie:"Les vidéos ambiance cosy home sur TikTok font des millions de vues. Parfait pour les périodes de fêtes.",iaAuto:"L'IA crée des ambiances déco saisonnières, guides cadeaux et contenu lifestyle soirée.",approche:"both",risque:"Fort pic de Noël — diversifiez avec Saint Valentin, anniversaires pour lisser les revenus."}]}};
+
+let currentU='tech';
+let selectedNiches=[];
+
+function showUniverse(u){
+  currentU=u;
+  document.querySelectorAll('.u-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.u-tab[data-u="${u}"]`).classList.add('active');
+  renderNiches(u);
+}
+
+function renderNiches(u){
+  const d=DATA[u];
+  const grid=document.getElementById('nicheGrid');
+  grid.innerHTML='';
+  d.niches.forEach((n,i)=>{
+    const isSelected=selectedNiches.find(s=>s.nom===n.nom);
+    const card=document.createElement('div');
+    card.className='niche-card'+(isSelected?' selected':'');
+    card.style.animationDelay=(i*0.05+0.04)+'s';
+    const sc=n.score==='HOT'?'score-hot':n.score==='GOOD'?'score-good':'score-rising';
+    const ap=n.approche==='marque'?'<span class="approach-badge approach-marque">🏷 MARQUE</span>':n.approche==='test'?'<span class="approach-badge approach-test">⚡ TEST RAPIDE</span>':'<span class="approach-badge approach-both">↔ MIXTE</span>';
+    card.innerHTML=`<div class="accent-bar ${d.barClass}"></div><span class="check">✓</span><div class="card-header"><div class="card-name">${n.nom}</div><div class="card-score ${sc}">${n.score}</div></div><div class="card-desc">${n.description}</div><div class="card-stats"><div class="stat"><span class="stat-label">Marge</span><span class="stat-val" style="color:${d.color}">${n.margeMin}–${n.margeMax}</span></div><div class="stat"><span class="stat-label">Concurrence</span><span class="stat-val">${n.concurrence}</span></div><div class="stat"><span class="stat-label">Tendance</span><span class="stat-val" style="color:${d.color}">${n.tendance}</span></div><div class="stat"><span class="stat-label">Budget</span><span class="stat-val">${n.budget}</span></div></div><div class="card-tags">${n.produits.map(p=>`<span class="card-tag">${p}</span>`).join('')}</div><div class="card-expand"><div class="expand-body"><div><div class="ex-label ${d.labelClass}">// Stratégie</div><div class="ex-text">${n.strategie}</div></div><div><div class="ex-label ${d.labelClass}">// Automatisation IA</div><div class="ex-text">${n.iaAuto}</div></div><div><div class="ex-label ${d.labelClass}">// Approche</div>${ap}</div><div><div class="ex-label" style="color:#ff6b35">// Risque</div><div class="ex-text" style="color:#ff6b35">${n.risque}</div></div></div></div>`;
+    let pt;
+    card.addEventListener('mousedown',()=>{pt=setTimeout(()=>toggleSelect(n,u,card),500);});
+    card.addEventListener('mouseup',()=>clearTimeout(pt));
+    card.addEventListener('touchstart',()=>{pt=setTimeout(()=>toggleSelect(n,u,card),500);},{passive:true});
+    card.addEventListener('touchend',()=>clearTimeout(pt));
+    card.addEventListener('click',()=>card.classList.toggle('open'));
+    grid.appendChild(card);
+  });
+}
+
+function toggleSelect(n,u,card){
+  const idx=selectedNiches.findIndex(s=>s.nom===n.nom);
+  if(idx>-1){selectedNiches.splice(idx,1);card.classList.remove('selected');}
+  else{if(selectedNiches.length>=4)return;selectedNiches.push({...n,universe:u});card.classList.add('selected');}
+  document.getElementById('compareCount').textContent=selectedNiches.length;
+  document.getElementById('compareBar').classList.toggle('visible',selectedNiches.length>=2);
+}
+
+function clearSelection(){
+  selectedNiches=[];
+  document.querySelectorAll('.niche-card.selected').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('compareCount').textContent=0;
+  document.getElementById('compareBar').classList.remove('visible');
+}
+
+function openCompare(){
+  const grid=document.getElementById('compareGrid');
+  grid.style.gridTemplateColumns=`repeat(${selectedNiches.length},1fr)`;
+  grid.innerHTML='';
+  const fields=[{label:'Score',fn:n=>n.score},{label:'Marge',fn:n=>`${n.margeMin} – ${n.margeMax}`},{label:'Concurrence',fn:n=>n.concurrence},{label:'Tendance',fn:n=>n.tendance},{label:'Budget',fn:n=>n.budget},{label:'Approche',fn:n=>n.approche},{label:'Risque',fn:n=>n.risque}];
+  selectedNiches.forEach(n=>{
+    const col=document.createElement('div');
+    col.className='compare-col';
+    const c=DATA[n.universe]?.color||'var(--accent)';
+    col.innerHTML=`<div class="compare-col-name" style="color:${c}">${n.nom}</div>`+fields.map(f=>`<div class="compare-row"><span class="compare-row-label">${f.label}</span><span class="compare-row-val">${f.fn(n)}</span></div>`).join('');
+    grid.appendChild(col);
+  });
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modalOverlay')){document.getElementById('modalOverlay').classList.remove('active');}
+}
+
+showUniverse('tech');
+</script>
+</body>
+</html>
